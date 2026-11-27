@@ -1,0 +1,2603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>remove.bg — Remove Image Background 100% Automatically & Free</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #33383f;
+      overflow-x: hidden;
+    }
+
+    /* Crisp Transparency Checkerboard Pattern */
+    .checkerboard {
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(45deg, #efefef 25%, transparent 25%),
+        linear-gradient(-45deg, #efefef 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #efefef 75%),
+        linear-gradient(-45deg, transparent 75%, #efefef 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    .checkerboard-sm {
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+        linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+        linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+      background-size: 10px 10px;
+      background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+    }
+
+    /* Elevated Soft Shadows matching remove.bg */
+    .shadow-soft-xl {
+      box-shadow: 0 20px 60px -10px rgba(17, 24, 39, 0.12), 0 8px 24px -6px rgba(17, 24, 39, 0.06);
+    }
+
+    .shadow-pill {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .shadow-panel {
+      box-shadow: 0 14px 42px rgba(15, 23, 42, 0.09), 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    /* Custom Range Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0075ff;
+      margin-top: -6.5px;
+      box-shadow: 0 2px 6px rgba(0, 117, 255, 0.45);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Pulse loader */
+    @keyframes scanLine {
+      0% { top: 0%; opacity: 0.9; }
+      50% { top: 96%; opacity: 1; }
+      100% { top: 0%; opacity: 0.9; }
+    }
+    .scan-line {
+      animation: scanLine 2s ease-in-out infinite;
+    }
+
+    /* Drag active overlay */
+    .drag-overlay {
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col select-none">
+
+  <!-- Hidden file inputs -->
+  <input type="file" id="mainFileInput" accept="image/*" class="hidden" multiple />
+  <input type="file" id="bgFileInput" accept="image/*" class="hidden" />
+
+  <!-- Global Drag & Drop Overlay -->
+  <div id="globalDragOverlay" class="fixed inset-0 z-50 bg-blue-600/15 drag-overlay hidden items-center justify-center p-6 pointer-events-none">
+    <div class="bg-white rounded-3xl shadow-soft-xl border-2 border-dashed border-[#0075FF] px-12 py-10 text-center max-w-md">
+      <div class="w-16 h-16 rounded-2xl bg-blue-50 text-[#0075FF] flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+      </div>
+      <h3 class="text-2xl font-bold text-slate-800">Drop image anywhere</h3>
+      <p class="text-slate-500 text-sm mt-1">We'll automatically remove the background in seconds</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Banner -->
+  <div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+
+  <!-- URL Modal -->
+  <div id="urlModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-soft-xl max-w-md w-full p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-slate-800">Paste Image URL</h3>
+        <button id="closeUrlModal" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Enter a direct link to any JPG, PNG, or WebP image.</p>
+      <input id="urlInputField" type="url" placeholder="https://example.com/photo.jpg" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#0075FF] text-sm mb-4 select-text" />
+      <div class="flex justify-end gap-2">
+        <button id="cancelUrlBtn" class="px-4 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button id="submitUrlBtn" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-[#0075FF] hover:bg-[#0062d6] text-white shadow-sm">Remove Background</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="w-full bg-white border-b border-slate-100 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <!-- Brand + Nav Links -->
+      <div class="flex items-center gap-8">
+        <a href="#" id="brandLogoBtn" class="flex items-center gap-2.5 group">
+          <!-- Stacked diamond icon matching remove.bg -->
+          <svg class="w-8 h-8" viewBox="0 0 36 36" fill="none">
+            <path d="M18 4L33 12.5L18 21L3 12.5L18 4Z" fill="#4B5563"/>
+            <path d="M3 18.5L18 27L33 18.5L29.5 16.5L18 23L6.5 16.5L3 18.5Z" fill="#9CA3AF"/>
+            <path d="M3 23.5L18 32L33 23.5L29.5 21.5L18 28L6.5 21.5L3 23.5Z" fill="#D1D5DB"/>
+          </svg>
+          <span class="text-2xl font-extrabold tracking-tight text-[#4B5563]">remove<span class="text-[#9CA3AF] font-bold">bg</span></span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+          <button id="navUploadsBtn" class="hover:text-slate-900 transition">Uploads</button>
+          <button id="navBulkBtn" class="hover:text-slate-900 transition">Bulk Editing</button>
+          <button id="navToolsBtn" class="hover:text-slate-900 transition">Magic Brush</button>
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            AI Engine Ready
+          </span>
+        </nav>
+      </div>
+
+      <!-- Right Actions -->
+      <div class="flex items-center gap-3">
+        <button id="headerPasteBtn" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 transition" title="Paste image from clipboard (Ctrl+V)">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Paste (Ctrl+V)
+        </button>
+        <button id="headerUploadBtn" class="px-5 py-2 rounded-full text-sm font-semibold bg-slate-100 hover:bg-slate-200/80 text-slate-800 transition">
+          Upload Image
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 1: HERO / LANDING UPLOAD VIEW (Matching Screenshot 1)            -->
+  <!-- ===================================================================== -->
+  <main id="heroView" class="flex-1 flex flex-col justify-center py-10 sm:py-16 px-4 sm:px-6">
+    <div class="max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      
+      <!-- Left Column: Cutout Showcase & Headline -->
+      <div class="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left">
+        <!-- Decorative Cutout Showcase Card -->
+        <div class="relative w-64 sm:w-72 h-56 sm:h-64 mb-6 rounded-3xl overflow-hidden checkerboard border border-slate-200/70 shadow-sm flex items-center justify-center group">
+          <canvas id="heroShowcaseCanvas" width="320" height="280" class="w-full h-full object-contain"></canvas>
+          <div class="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 shadow-xs border border-slate-100">
+            ✨ Auto Cutout
+          </div>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-[#3B4046] tracking-tight leading-[1.12]">
+          Remove Image<br/>Background
+        </h1>
+
+        <div class="mt-4 flex flex-wrap items-center justify-center lg:justify-start gap-2 text-lg sm:text-xl font-bold text-[#3B4046]">
+          <span>100% Automatically and</span>
+          <span class="px-3.5 py-0.5 rounded-full bg-[#0075FF] text-white text-base sm:text-lg font-bold shadow-xs">
+            Free
+          </span>
+        </div>
+
+        <p class="mt-3 text-sm text-slate-500 max-w-md">
+          Upload, drag &amp; drop, or press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-semibold text-slate-700">Ctrl+V</kbd> to paste any photo, product, logo, or portrait. Refine edges with Magic Brush and replace backgrounds instantly.
+        </p>
+      </div>
+
+      <!-- Right Column: Elevated Upload Dropzone Card -->
+      <div class="lg:col-span-6 flex flex-col items-center">
+        <div id="heroDropCard" class="w-full max-w-md bg-white rounded-[32px] shadow-soft-xl border border-slate-100 p-8 sm:p-12 flex flex-col items-center justify-center text-center transition-all duration-200 hover:border-blue-200">
+          
+          <button id="heroUploadBtn" class="w-full sm:w-auto px-9 py-4 rounded-full bg-[#0075FF] hover:bg-[#0062D6] active:scale-[0.99] text-white font-bold text-lg sm:text-xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2.5 cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload Image
+          </button>
+
+          <p class="mt-5 text-base font-bold text-slate-600">
+            or drop a file,
+          </p>
+          <p class="mt-1 text-xs text-slate-400 font-medium">
+            <button id="heroPasteTrigger" class="underline hover:text-[#0075FF] transition">paste image</button>
+            or
+            <button id="heroUrlTrigger" class="underline hover:text-[#0075FF] transition">URL</button>
+          </p>
+        </div>
+
+        <!-- Sample Images Quick-Try Bar -->
+        <div class="mt-7 w-full max-w-md">
+          <p class="text-xs font-semibold text-slate-400 text-center mb-3">No image? Try one of these:</p>
+          <div id="sampleImagesGrid" class="grid grid-cols-4 gap-2.5">
+            <!-- Populated dynamically with generated crisp sample images -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 2: STUDIO EDITOR VIEW (Matching Screenshots 2, 3, and 4)         -->
+  <!-- ===================================================================== -->
+  <section id="editorView" class="hidden flex-1 flex-col bg-[#F8FAFC] relative pb-6">
+
+    <!-- TOP FLOATING PILL TOOLBAR (Matching Screenshots 2, 3, 4) -->
+    <div class="w-full px-3 sm:px-6 pt-4 pb-2 flex justify-center z-20">
+      <div class="bg-white rounded-full shadow-pill border border-slate-200/70 px-2.5 sm:px-4 py-1.5 flex flex-wrap items-center justify-center gap-1 sm:gap-2 max-w-full">
+        
+        <!-- Mode Tab: Cutout -->
+        <button data-tab="cutout" class="editor-tab-btn active flex items-center gap-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold transition bg-slate-100 text-slate-900">
+          <svg class="w-4 h-4 text-[#0075FF]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+          <span>Cutout</span>
+        </button>
+
+        <!-- Mode Tab: Background -->
+        <button data-tab="background" class="editor-tab-btn flex items-center gap-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold transition text-slate-600 hover:bg-slate-50">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>Background</span>
+        </button>
+
+        <!-- Mode Tab: Effects -->
+        <button data-tab="effects" class="editor-tab-btn flex items-center gap-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold transition text-slate-600 hover:bg-slate-50">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="10" cy="10" r="6" />
+            <circle cx="14" cy="14" r="6" stroke-dasharray="2 2" />
+          </svg>
+          <span>Effects</span>
+        </button>
+
+        <!-- Mode Tab: Adjust -->
+        <button data-tab="adjust" class="editor-tab-btn flex items-center gap-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold transition text-slate-600 hover:bg-slate-50">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          <span>Adjust</span>
+        </button>
+
+        <div class="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+        <!-- Compare Original Hold/Toggle Button -->
+        <button id="compareBtn" title="Hold or click to compare with original image" class="p-2 rounded-full text-slate-600 hover:bg-slate-100 transition flex items-center gap-1 text-xs font-semibold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v18m6-18v18M4 7h3m-3 10h3m10-10h3m-3 10h3" />
+          </svg>
+          <span class="hidden md:inline">Compare</span>
+        </button>
+
+        <!-- Undo & Redo -->
+        <button id="undoBtn" disabled title="Undo (Ctrl+Z)" class="p-2 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-35 disabled:pointer-events-none transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+        </button>
+        <button id="redoBtn" disabled title="Redo (Ctrl+Y)" class="p-2 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-35 disabled:pointer-events-none transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+          </svg>
+        </button>
+
+        <div class="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+        <!-- Copy Image to Clipboard Button -->
+        <button id="copyImageBtn" title="Copy PNG image to clipboard" class="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer">
+          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span id="copyBtnLabel">Copy</span>
+        </button>
+
+        <!-- Primary Download Button + Format Dropdown -->
+        <div class="relative inline-flex">
+          <button id="downloadMainBtn" class="flex items-center gap-1.5 pl-4 pr-3 py-2 rounded-l-full text-xs sm:text-sm font-bold bg-[#0075FF] hover:bg-[#0062D6] text-white transition cursor-pointer shadow-xs">
+            <span>Download</span>
+          </button>
+          <button id="downloadDropdownToggle" class="px-2.5 py-2 rounded-r-full bg-[#0069E6] hover:bg-[#0058C2] text-white border-l border-blue-400/40 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Download Dropdown Menu -->
+          <div id="downloadMenu" class="hidden absolute right-0 top-full mt-2 w-60 bg-white rounded-2xl shadow-soft-xl border border-slate-100 p-2 z-40">
+            <button data-format="png" class="download-option w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-bold text-slate-800">PNG (Transparent)</div>
+                <div class="text-[11px] text-slate-400">Best for cutouts &amp; graphic design</div>
+              </div>
+              <span class="text-xs font-bold text-[#0075FF]">HD</span>
+            </button>
+            <button data-format="jpg" class="download-option w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-bold text-slate-800">JPG (White / BG)</div>
+                <div class="text-[11px] text-slate-400">Smaller file size, solid background</div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400">JPG</span>
+            </button>
+            <button data-format="webp" class="download-option w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-bold text-slate-800">WebP (Optimized)</div>
+                <div class="text-[11px] text-slate-400">Modern web transparent format</div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400">WebP</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN STUDIO WORKSPACE (Center Canvas + Right Inspector Card) -->
+    <div class="max-w-7xl mx-auto w-full px-3 sm:px-6 pt-3 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      
+      <!-- CENTER CANVAS STAGE (8 cols on lg) -->
+      <div class="lg:col-span-8 flex flex-col items-center">
+        <div id="canvasStageWrapper" class="relative w-full h-[420px] sm:h-[520px] rounded-3xl checkerboard border border-slate-200/80 shadow-xs overflow-hidden flex items-center justify-center touch-none">
+          
+          <!-- Main Interactive Canvas -->
+          <canvas id="mainEditorCanvas" class="max-w-full max-h-full transition-transform duration-75"></canvas>
+
+          <!-- Brush Preview Cursor Ring (visible in Cutout mode) -->
+          <div id="brushCursor" class="pointer-events-none fixed rounded-full border-2 border-white shadow-md hidden z-30 -translate-x-1/2 -translate-y-1/2" style="background: rgba(239, 68, 68, 0.35);"></div>
+
+          <!-- Processing / AI Segmentation Overlay -->
+          <div id="processingOverlay" class="hidden absolute inset-0 bg-white/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-6 text-center">
+            <div class="relative w-20 h-20 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-4 overflow-hidden">
+              <svg class="w-10 h-10 text-[#0075FF]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <div class="scan-line absolute left-0 right-0 h-1 bg-[#0075FF] shadow-[0_0_12px_#0075FF]"></div>
+            </div>
+            <h4 id="processingTitle" class="text-lg font-bold text-slate-800">Removing background...</h4>
+            <p id="processingSubtext" class="text-xs text-slate-500 mt-1 max-w-xs">AI neural segmentation is isolating the foreground subject</p>
+            <div class="w-56 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-4">
+              <div id="processingProgressBar" class="h-full bg-[#0075FF] rounded-full transition-all duration-300" style="width: 25%"></div>
+            </div>
+          </div>
+
+          <!-- Top-Right Zoom Controls Pill -->
+          <div class="absolute top-3.5 right-3.5 flex items-center gap-1 bg-white/95 backdrop-blur-xs rounded-full px-2 py-1 shadow-sm border border-slate-200/70 z-20">
+            <button id="zoomOutBtn" title="Zoom Out" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-bold">−</button>
+            <span id="zoomLabel" class="text-xs font-semibold text-slate-600 px-1.5 min-w-[44px] text-center">100%</span>
+            <button id="zoomInBtn" title="Zoom In" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 text-sm font-bold">+</button>
+            <button id="zoomResetBtn" title="Reset Zoom" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Compare Original Badge -->
+          <div id="comparingBadge" class="hidden absolute top-3.5 left-3.5 bg-slate-900/80 text-white text-xs font-semibold px-3 py-1 rounded-full z-20">
+            Original Image
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT FLOATING INSPECTOR CARD (4 cols on lg) -->
+      <aside class="lg:col-span-4 w-full">
+        <div class="bg-white rounded-[28px] shadow-panel border border-slate-100 p-5 sm:p-6">
+          
+          <!-- =============================================================== -->
+          <!-- INSPECTOR PANEL 1: CUTOUT / MAGIC BRUSH (Screenshot 3)          -->
+          <!-- =============================================================== -->
+          <div id="panelCutout" class="space-y-5">
+            <!-- Header Banner Card -->
+            <div class="bg-slate-50 rounded-2xl p-3.5 flex items-center gap-3.5 border border-slate-100">
+              <div class="w-16 h-16 rounded-xl checkerboard-sm overflow-hidden shrink-0 relative border border-slate-200/70 flex items-center justify-center">
+                <div class="w-9 h-12 rounded-t-full bg-slate-700/80"></div>
+                <div class="absolute inset-y-0 left-0 w-7 bg-rose-500/45 rounded-r-full"></div>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Magic Brush</div>
+                <div class="text-sm font-bold text-slate-800 leading-snug mt-0.5">Easily Erase or Restore Anything</div>
+              </div>
+            </div>
+
+            <!-- Erase / Restore Mode Toggle Buttons -->
+            <div class="grid grid-cols-2 gap-3">
+              <button id="brushModeErase" class="brush-mode-btn active flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border-2 border-[#0075FF] bg-blue-50/30 text-[#0075FF] font-bold text-sm transition cursor-pointer">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path stroke-linecap="round" d="M8 12h8" />
+                </svg>
+                Erase
+              </button>
+
+              <button id="brushModeRestore" class="brush-mode-btn flex flex-col items-center justify-center py-3.5 px-3 rounded-2xl border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm transition cursor-pointer">
+                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path stroke-linecap="round" d="M12 8v8m-4-4h8" />
+                </svg>
+                Restore
+              </button>
+            </div>
+
+            <!-- Brush Size Slider -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold text-slate-700">Brush Size</span>
+                <span id="brushSizeVal" class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">32 px</span>
+              </div>
+              <input id="brushSizeSlider" type="range" min="4" max="120" value="32" class="w-full" />
+            </div>
+
+            <!-- Brush Softness / Feather Slider -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold text-slate-700">Edge Softness</span>
+                <span id="brushFeatherVal" class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">20%</span>
+              </div>
+              <input id="brushFeatherSlider" type="range" min="0" max="80" value="20" class="w-full" />
+            </div>
+
+            <!-- Smart Auto-Reprocess / Reset Cutout Actions -->
+            <div class="pt-3 border-t border-slate-100 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold text-slate-700">Smart Edge Refinement</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input id="smartEdgeToggle" type="checkbox" checked class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0075FF]"></div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-2">
+                <button id="reRunAiBtn" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-xs font-bold text-slate-700 transition flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-[#0075FF]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Auto Cutout
+                </button>
+                <button id="resetMaskBtn" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-xs font-bold text-slate-700 transition">
+                  Restore Full Image
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- =============================================================== -->
+          <!-- INSPECTOR PANEL 2: BACKGROUND (Photo / Color / Blur)            -->
+          <!-- =============================================================== -->
+          <div id="panelBackground" class="hidden space-y-4">
+            <!-- Sub-Tabs: Photo / Color / Blur -->
+            <div class="grid grid-cols-3 border-b border-slate-200 text-sm font-bold">
+              <button data-bgsub="photo" class="bg-sub-btn active pb-2.5 border-b-2 border-[#0075FF] text-[#0075FF] transition">Photo</button>
+              <button data-bgsub="color" class="bg-sub-btn pb-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">Color</button>
+              <button data-bgsub="blur" class="bg-sub-btn pb-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">Blur</button>
+            </div>
+
+            <!-- BG Sub-Panel: Photo -->
+            <div id="bgSubPhoto" class="space-y-3">
+              <p class="text-xs text-slate-400 font-medium">Upload your own background or pick a curated scene</p>
+              <div id="bgPhotoGrid" class="grid grid-cols-3 gap-2.5 max-h-[310px] overflow-y-auto pr-1">
+                <!-- Slot 1: Transparent Checkerboard -->
+                <button id="bgTransparentBtn" title="Transparent Background" class="aspect-square rounded-2xl checkerboard-sm border-2 border-[#0075FF] flex items-center justify-center relative overflow-hidden group cursor-pointer">
+                  <span class="bg-white/90 px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-700 shadow-2xs">None</span>
+                </button>
+
+                <!-- Slot 2: Upload Custom Background (+) -->
+                <button id="uploadCustomBgBtn" title="Upload Custom Background Image" class="aspect-square rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#0075FF] hover:bg-blue-50/40 flex flex-col items-center justify-center text-slate-500 hover:text-[#0075FF] transition cursor-pointer">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span class="text-[10px] font-bold mt-1">Upload</span>
+                </button>
+
+                <!-- Curated Procedural High-Res Backgrounds populated by JS -->
+              </div>
+            </div>
+
+            <!-- BG Sub-Panel: Color -->
+            <div id="bgSubColor" class="hidden space-y-4">
+              <!-- Custom Color Wheel + Hex Input -->
+              <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <input id="customColorPicker" type="color" value="#0075FF" class="w-11 h-11 rounded-xl border-0 cursor-pointer bg-transparent" />
+                <div class="flex-1">
+                  <label class="text-[11px] font-bold text-slate-400 uppercase">Custom Hex Color</label>
+                  <input id="customColorHex" type="text" value="#0075FF" maxlength="7" class="w-full text-sm font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1 mt-0.5 uppercase select-text" />
+                </div>
+                <button id="applyCustomColorBtn" class="px-3 py-2 rounded-xl bg-[#0075FF] text-white text-xs font-bold hover:bg-[#0062D6]">Apply</button>
+              </div>
+
+              <!-- Solid & Gradient Color Swatches -->
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-2">Studio Solid Colors</div>
+                <div id="solidColorSwatches" class="grid grid-cols-5 gap-2.5"></div>
+              </div>
+
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-2">Modern Gradients</div>
+                <div id="gradientColorSwatches" class="grid grid-cols-4 gap-2.5"></div>
+              </div>
+            </div>
+
+            <!-- BG Sub-Panel: Blur -->
+            <div id="bgSubBlur" class="hidden space-y-4 py-2">
+              <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-bold text-slate-800">Original Background Blur</span>
+                  <span id="bgBlurVal" class="text-xs font-bold text-[#0075FF] bg-blue-50 px-2 py-0.5 rounded-md">0 px</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Keep your original background with a DSLR portrait bokeh blur effect.</p>
+                <input id="bgBlurSlider" type="range" min="0" max="40" value="0" class="w-full" />
+              </div>
+
+              <div class="grid grid-cols-4 gap-2">
+                <button data-blur="0" class="blur-preset-btn py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">Off</button>
+                <button data-blur="6" class="blur-preset-btn py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">Soft</button>
+                <button data-blur="16" class="blur-preset-btn py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">Portrait</button>
+                <button data-blur="30" class="blur-preset-btn py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">Strong</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- =============================================================== -->
+          <!-- INSPECTOR PANEL 3: EFFECTS (Drop Shadow & Sticker Outline)      -->
+          <!-- =============================================================== -->
+          <div id="panelEffects" class="hidden space-y-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-bold text-slate-800">Drop Shadow</h4>
+                <p class="text-xs text-slate-400">Add realistic depth behind your cutout</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="shadowToggle" type="checkbox" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0075FF]"></div>
+              </label>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                  <span>Shadow Blur</span>
+                  <span id="shadowBlurVal">18 px</span>
+                </div>
+                <input id="shadowBlurSlider" type="range" min="0" max="60" value="18" class="w-full" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                  <span>Shadow Opacity</span>
+                  <span id="shadowOpacityVal">45%</span>
+                </div>
+                <input id="shadowOpacitySlider" type="range" min="0" max="100" value="45" class="w-full" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                  <span>Vertical Offset</span>
+                  <span id="shadowOffsetYVal">12 px</span>
+                </div>
+                <input id="shadowOffsetYSlider" type="range" min="-30" max="50" value="12" class="w-full" />
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-slate-800">Sticker White Outline</h4>
+                  <p class="text-xs text-slate-400">Add a die-cut border around subject</p>
+                </div>
+                <input id="outlineColorInput" type="color" value="#ffffff" class="w-8 h-8 rounded-lg cursor-pointer" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                  <span>Outline Thickness</span>
+                  <span id="outlineSizeVal">0 px</span>
+                </div>
+                <input id="outlineSizeSlider" type="range" min="0" max="24" value="0" class="w-full" />
+              </div>
+            </div>
+          </div>
+
+          <!-- =============================================================== -->
+          <!-- INSPECTOR PANEL 4: ADJUST (Brightness, Contrast, Saturation)    -->
+          <!-- =============================================================== -->
+          <div id="panelAdjust" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-slate-800">Subject Color Adjustments</h4>
+              <button id="resetAdjustBtn" class="text-xs font-bold text-[#0075FF] hover:underline">Reset</button>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                <span>Brightness</span>
+                <span id="adjBrightnessVal">100%</span>
+              </div>
+              <input id="adjBrightnessSlider" type="range" min="50" max="150" value="100" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                <span>Contrast</span>
+                <span id="adjContrastVal">100%</span>
+              </div>
+              <input id="adjContrastSlider" type="range" min="50" max="150" value="100" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                <span>Saturation</span>
+                <span id="adjSaturationVal">100%</span>
+              </div>
+              <input id="adjSaturationSlider" type="range" min="0" max="200" value="100" class="w-full" />
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <!-- BOTTOM SESSION THUMBNAIL STRIP (Matching Screenshots 2, 3, 4) -->
+    <div class="w-full px-4 pt-5 flex justify-center">
+      <div id="thumbnailStrip" class="flex items-center gap-3 overflow-x-auto py-1.5 px-2 max-w-full">
+        <!-- Add (+) Button -->
+        <button id="stripAddBtn" title="Upload or add another image" class="w-14 h-14 rounded-2xl bg-slate-200/75 hover:bg-slate-300/80 text-slate-700 flex items-center justify-center shrink-0 transition cursor-pointer">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <!-- Session image thumbnails will be rendered here -->
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION LOGIC & AI BACKGROUND SEGMENTATION ENGINE                 -->
+  <!-- ===================================================================== -->
+  <script type="module">
+    /**
+     * AI Background Removal Engine & Studio Controller
+     * ------------------------------------------------
+     * 1. Attempts to dynamically load @imgly/background-removal (ONNX/WASM neural network)
+     *    for studio-grade subject segmentation across portraits, animals, products, and cars.
+     * 2. Features a built-in, ultra-fast Multi-Seed Edge-Aware Flood-Fill + Color-Distance
+     *    GrabCut-style Segmentation Engine in pure Canvas JS that guarantees instant,
+     *    offline-capable, zero-API-key background removal on every single image!
+     */
+
+    // --- DOM References ---
+    const heroView = document.getElementById('heroView');
+    const editorView = document.getElementById('editorView');
+    const mainFileInput = document.getElementById('mainFileInput');
+    const bgFileInput = document.getElementById('bgFileInput');
+    const globalDragOverlay = document.getElementById('globalDragOverlay');
+    const toastContainer = document.getElementById('toastContainer');
+
+    // Hero buttons
+    const heroUploadBtn = document.getElementById('heroUploadBtn');
+    const headerUploadBtn = document.getElementById('headerUploadBtn');
+    const headerPasteBtn = document.getElementById('headerPasteBtn');
+    const heroPasteTrigger = document.getElementById('heroPasteTrigger');
+    const heroUrlTrigger = document.getElementById('heroUrlTrigger');
+    const brandLogoBtn = document.getElementById('brandLogoBtn');
+
+    // URL Modal
+    const urlModal = document.getElementById('urlModal');
+    const urlInputField = document.getElementById('urlInputField');
+    const closeUrlModal = document.getElementById('closeUrlModal');
+    const cancelUrlBtn = document.getElementById('cancelUrlBtn');
+    const submitUrlBtn = document.getElementById('submitUrlBtn');
+
+    // Editor Canvas & Controls
+    const canvasStageWrapper = document.getElementById('canvasStageWrapper');
+    const mainEditorCanvas = document.getElementById('mainEditorCanvas');
+    const mainCtx = mainEditorCanvas.getContext('2d', { willReadFrequently: true });
+    const brushCursor = document.getElementById('brushCursor');
+    const processingOverlay = document.getElementById('processingOverlay');
+    const processingTitle = document.getElementById('processingTitle');
+    const processingSubtext = document.getElementById('processingSubtext');
+    const processingProgressBar = document.getElementById('processingProgressBar');
+
+    // Toolbar controls
+    const tabButtons = document.querySelectorAll('.editor-tab-btn');
+    const compareBtn = document.getElementById('compareBtn');
+    const comparingBadge = document.getElementById('comparingBadge');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const copyImageBtn = document.getElementById('copyImageBtn');
+    const copyBtnLabel = document.getElementById('copyBtnLabel');
+    const downloadMainBtn = document.getElementById('downloadMainBtn');
+    const downloadDropdownToggle = document.getElementById('downloadDropdownToggle');
+    const downloadMenu = document.getElementById('downloadMenu');
+
+    // Zoom controls
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomResetBtn = document.getElementById('zoomResetBtn');
+    const zoomLabel = document.getElementById('zoomLabel');
+
+    // Inspector Panels
+    const panelCutout = document.getElementById('panelCutout');
+    const panelBackground = document.getElementById('panelBackground');
+    const panelEffects = document.getElementById('panelEffects');
+    const panelAdjust = document.getElementById('panelAdjust');
+
+    // Cutout controls
+    const brushModeErase = document.getElementById('brushModeErase');
+    const brushModeRestore = document.getElementById('brushModeRestore');
+    const brushSizeSlider = document.getElementById('brushSizeSlider');
+    const brushSizeVal = document.getElementById('brushSizeVal');
+    const brushFeatherSlider = document.getElementById('brushFeatherSlider');
+    const brushFeatherVal = document.getElementById('brushFeatherVal');
+    const smartEdgeToggle = document.getElementById('smartEdgeToggle');
+    const reRunAiBtn = document.getElementById('reRunAiBtn');
+    const resetMaskBtn = document.getElementById('resetMaskBtn');
+
+    // Background controls
+    const bgSubButtons = document.querySelectorAll('.bg-sub-btn');
+    const bgSubPhoto = document.getElementById('bgSubPhoto');
+    const bgSubColor = document.getElementById('bgSubColor');
+    const bgSubBlur = document.getElementById('bgSubBlur');
+    const bgPhotoGrid = document.getElementById('bgPhotoGrid');
+    const bgTransparentBtn = document.getElementById('bgTransparentBtn');
+    const uploadCustomBgBtn = document.getElementById('uploadCustomBgBtn');
+    const customColorPicker = document.getElementById('customColorPicker');
+    const customColorHex = document.getElementById('customColorHex');
+    const applyCustomColorBtn = document.getElementById('applyCustomColorBtn');
+    const solidColorSwatches = document.getElementById('solidColorSwatches');
+    const gradientColorSwatches = document.getElementById('gradientColorSwatches');
+    const bgBlurSlider = document.getElementById('bgBlurSlider');
+    const bgBlurVal = document.getElementById('bgBlurVal');
+
+    // Effects & Adjust controls
+    const shadowToggle = document.getElementById('shadowToggle');
+    const shadowBlurSlider = document.getElementById('shadowBlurSlider');
+    const shadowBlurVal = document.getElementById('shadowBlurVal');
+    const shadowOpacitySlider = document.getElementById('shadowOpacitySlider');
+    const shadowOpacityVal = document.getElementById('shadowOpacityVal');
+    const shadowOffsetYSlider = document.getElementById('shadowOffsetYSlider');
+    const shadowOffsetYVal = document.getElementById('shadowOffsetYVal');
+    const outlineColorInput = document.getElementById('outlineColorInput');
+    const outlineSizeSlider = document.getElementById('outlineSizeSlider');
+    const outlineSizeVal = document.getElementById('outlineSizeVal');
+
+    const adjBrightnessSlider = document.getElementById('adjBrightnessSlider');
+    const adjBrightnessVal = document.getElementById('adjBrightnessVal');
+    const adjContrastSlider = document.getElementById('adjContrastSlider');
+    const adjContrastVal = document.getElementById('adjContrastVal');
+    const adjSaturationSlider = document.getElementById('adjSaturationSlider');
+    const adjSaturationVal = document.getElementById('adjSaturationVal');
+    const resetAdjustBtn = document.getElementById('resetAdjustBtn');
+
+    const thumbnailStrip = document.getElementById('thumbnailStrip');
+    const stripAddBtn = document.getElementById('stripAddBtn');
+
+    // --- Application State ---
+    const state = {
+      sessions: [], // Array of session objects { id, name, width, height, originalCanvas, maskCanvas, history, historyIndex, bg, effects, adjust }
+      activeSessionId: null,
+      activeTab: 'cutout',
+      brushMode: 'erase', // 'erase' | 'restore'
+      brushSize: 32,
+      brushFeather: 20,
+      smartEdge: true,
+      zoom: 1,
+      isDrawing: false,
+      lastPoint: null,
+      isComparing: false,
+      aiModule: null,
+      aiLoadAttempted: false
+    };
+
+    // --- Helper: Toast Notification ---
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const bgClass = type === 'success' ? 'bg-slate-900 text-white' : type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white';
+      toast.className = `${bgClass} px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-lg flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0`;
+      toast.innerHTML = `<span>${message}</span>`;
+      toastContainer.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // --- Helper: Get Active Session ---
+    function getActiveSession() {
+      return state.sessions.find(s => s.id === state.activeSessionId) || null;
+    }
+
+    // --- Hero Showcase Artwork (Procedural Crisp Portrait + Flowers Cutout) ---
+    function renderHeroShowcase() {
+      const canvas = document.getElementById('heroShowcaseCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Stylized botanical bouquet + studio silhouette cutout
+      ctx.save();
+      ctx.translate(160, 150);
+
+      // Soft studio drop shadow
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.16)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 8;
+
+      // Shoulders / Dress
+      ctx.fillStyle = '#B08968';
+      ctx.beginPath();
+      ctx.ellipse(0, 82, 58, 48, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Neck
+      ctx.fillStyle = '#D4A373';
+      ctx.fillRect(-11, 20, 22, 26);
+
+      // Hair back
+      ctx.fillStyle = '#2B2D42';
+      ctx.beginPath();
+      ctx.arc(0, -12, 38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Face
+      ctx.fillStyle = '#DDA15E';
+      ctx.beginPath();
+      ctx.ellipse(0, -8, 25, 31, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Curly hair highlights
+      ctx.fillStyle = '#1D1E2C';
+      const curls = [[-26,-24,14],[26,-24,14],[-30,-4,13],[30,-4,13],[-18,-36,15],[18,-36,15],[0,-40,16]];
+      curls.forEach(([cx, cy, r]) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Smile & eyes
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#2B2D42';
+      ctx.beginPath();
+      ctx.arc(-9, -10, 2.5, 0, Math.PI * 2);
+      ctx.arc(9, -10, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#7F4F24';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(0, -2, 8, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+
+      // Bouquet of white & yellow daisies on left
+      ctx.translate(-44, 42);
+      ctx.rotate(-0.35);
+      ctx.fillStyle = '#4A7C59';
+      ctx.beginPath();
+      ctx.moveTo(0, 45);
+      ctx.lineTo(-26, -35);
+      ctx.lineTo(26, -35);
+      ctx.closePath();
+      ctx.fill();
+
+      const daisies = [[-14,-28],[12,-32],[0,-18],[-18,-10],[16,-12],[0,-38]];
+      daisies.forEach(([dx, dy]) => {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(dx, dy, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FACC15';
+        ctx.beginPath();
+        ctx.arc(dx, dy, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    // --- Generate High-Res Sample Images (Zero CORS issues!) ---
+    function createSampleImages() {
+      const samples = [
+        {
+          name: 'Sneaker Product',
+          draw: (ctx, w, h) => {
+            // Studio gradient background
+            const bg = ctx.createLinearGradient(0, 0, w, h);
+            bg.addColorStop(0, '#E0E7FF');
+            bg.addColorStop(1, '#C7D2FE');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            // Sneaker illustration
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.54);
+            // Sole
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.roundRect(-140, 22, 285, 36, [8, 8, 18, 18]);
+            ctx.fill();
+            // Upper body
+            ctx.fillStyle = '#EF4444';
+            ctx.beginPath();
+            ctx.moveTo(-135, 22);
+            ctx.quadraticCurveTo(-130, -35, -50, -30);
+            ctx.lineTo(15, -75);
+            ctx.lineTo(65, -70);
+            ctx.quadraticCurveTo(135, -35, 140, 22);
+            ctx.closePath();
+            ctx.fill();
+            // Swoosh / Stripe
+            ctx.fillStyle = '#1E293B';
+            ctx.beginPath();
+            ctx.moveTo(-85, 5);
+            ctx.quadraticCurveTo(0, 18, 110, -25);
+            ctx.quadraticCurveTo(15, 2, -85, -8);
+            ctx.closePath();
+            ctx.fill();
+            // Laces
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            [-15, 5, 25].forEach(lx => {
+              ctx.beginPath();
+              ctx.moveTo(lx, -58);
+              ctx.lineTo(lx + 18, -42);
+              ctx.stroke();
+            });
+            ctx.restore();
+          }
+        },
+        {
+          name: 'Portrait Avatar',
+          draw: (ctx, w, h) => {
+            const bg = ctx.createLinearGradient(0, 0, 0, h);
+            bg.addColorStop(0, '#FDE68A');
+            bg.addColorStop(1, '#F59E0B');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.52);
+            // Jacket
+            ctx.fillStyle = '#1E293B';
+            ctx.beginPath();
+            ctx.ellipse(0, 130, 110, 90, 0, Math.PI, Math.PI * 2);
+            ctx.fill();
+            // Shirt
+            ctx.fillStyle = '#38BDF8';
+            ctx.beginPath();
+            ctx.moveTo(-25, 45);
+            ctx.lineTo(25, 45);
+            ctx.lineTo(0, 115);
+            ctx.closePath();
+            ctx.fill();
+            // Head
+            ctx.fillStyle = '#FDBA74';
+            ctx.beginPath();
+            ctx.ellipse(0, -15, 52, 64, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Hair
+            ctx.fillStyle = '#312E81';
+            ctx.beginPath();
+            ctx.arc(0, -32, 56, Math.PI, Math.PI * 2);
+            ctx.fill();
+            // Sunglasses
+            ctx.fillStyle = '#0F172A';
+            ctx.beginPath();
+            ctx.roundRect(-42, -26, 36, 22, 6);
+            ctx.roundRect(6, -26, 36, 22, 6);
+            ctx.fill();
+            ctx.fillRect(-6, -20, 12, 4);
+            // Smile
+            ctx.strokeStyle = '#9A3412';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 12, 16, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        },
+        {
+          name: 'Coffee Cup',
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#CCFBF1';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.52);
+            // Handle
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 18;
+            ctx.beginPath();
+            ctx.arc(72, -5, 36, -Math.PI * 0.5, Math.PI * 0.5);
+            ctx.stroke();
+            // Cup body
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.roundRect(-75, -65, 150, 135, [8, 8, 48, 48]);
+            ctx.fill();
+            // Sleeve
+            ctx.fillStyle = '#D97706';
+            ctx.fillRect(-74, -22, 148, 46);
+            // Lid
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.roundRect(-84, -85, 168, 22, 8);
+            ctx.fill();
+            ctx.restore();
+          }
+        },
+        {
+          name: 'Sports Car',
+          draw: (ctx, w, h) => {
+            const bg = ctx.createLinearGradient(0, 0, w, h);
+            bg.addColorStop(0, '#FCE7F3');
+            bg.addColorStop(1, '#FBCFE8');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.56);
+            // Car Chassis
+            ctx.fillStyle = '#0284C7';
+            ctx.beginPath();
+            ctx.moveTo(-165, 25);
+            ctx.lineTo(-155, -12);
+            ctx.lineTo(-75, -22);
+            ctx.lineTo(-20, -65);
+            ctx.lineTo(75, -65);
+            ctx.lineTo(145, -18);
+            ctx.lineTo(168, 25);
+            ctx.closePath();
+            ctx.fill();
+            // Windows
+            ctx.fillStyle = '#BAE6FD';
+            ctx.beginPath();
+            ctx.moveTo(-62, -22);
+            ctx.lineTo(-16, -55);
+            ctx.lineTo(66, -55);
+            ctx.lineTo(118, -22);
+            ctx.closePath();
+            ctx.fill();
+            // Wheels
+            [-95, 95].forEach(wx => {
+              ctx.fillStyle = '#1E293B';
+              ctx.beginPath();
+              ctx.arc(wx, 28, 32, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#CBD5E1';
+              ctx.beginPath();
+              ctx.arc(wx, 28, 15, 0, Math.PI * 2);
+              ctx.fill();
+            });
+            ctx.restore();
+          }
+        }
+      ];
+
+      const grid = document.getElementById('sampleImagesGrid');
+      grid.innerHTML = '';
+
+      samples.forEach(sample => {
+        const c = document.createElement('canvas');
+        c.width = 480;
+        c.height = 380;
+        sample.draw(c.getContext('2d'), c.width, c.height);
+        const dataUrl = c.toDataURL('image/png');
+
+        const btn = document.createElement('button');
+        btn.className = 'aspect-square rounded-2xl overflow-hidden border border-slate-200 hover:border-[#0075FF] hover:scale-105 transition shadow-2xs cursor-pointer bg-white';
+        btn.title = `Try ${sample.name}`;
+        btn.innerHTML = `<img src="${dataUrl}" alt="${sample.name}" class="w-full h-full object-cover" />`;
+        btn.addEventListener('click', () => loadImageFromSource(dataUrl, sample.name));
+        grid.appendChild(btn);
+      });
+    }
+
+    // --- Curated High-Resolution Procedural Studio Backgrounds (Zero CORS issues!) ---
+    const presetBackgrounds = [
+      {
+        id: 'studio-warm',
+        name: 'Warm Studio',
+        render: (ctx, w, h) => {
+          const g = ctx.createRadialGradient(w * 0.5, h * 0.35, w * 0.05, w * 0.5, h * 0.5, w * 0.8);
+          g.addColorStop(0, '#FFF7ED');
+          g.addColorStop(0.55, '#FFEDD5');
+          g.addColorStop(1, '#FED7AA');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+        }
+      },
+      {
+        id: 'nordic-interior',
+        name: 'Minimalist Wall',
+        render: (ctx, w, h) => {
+          const wall = ctx.createLinearGradient(0, 0, 0, h * 0.78);
+          wall.addColorStop(0, '#F1F5F9');
+          wall.addColorStop(1, '#E2E8F0');
+          ctx.fillStyle = wall;
+          ctx.fillRect(0, 0, w, h * 0.78);
+
+          // Floor
+          ctx.fillStyle = '#CBD5E1';
+          ctx.fillRect(0, h * 0.78, w, h * 0.22);
+
+          // Soft sunlight window beam
+          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          ctx.beginPath();
+          ctx.moveTo(w * 0.1, 0);
+          ctx.lineTo(w * 0.55, 0);
+          ctx.lineTo(w * 0.85, h);
+          ctx.lineTo(w * 0.3, h);
+          ctx.closePath();
+          ctx.fill();
+        }
+      },
+      {
+        id: 'desert-dunes',
+        name: 'Golden Dunes',
+        render: (ctx, w, h) => {
+          const sky = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+          sky.addColorStop(0, '#FDE68A');
+          sky.addColorStop(1, '#FDBA74');
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, w, h);
+
+          ctx.fillStyle = '#EA580C';
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.58);
+          ctx.quadraticCurveTo(w * 0.35, h * 0.42, w * 0.7, h * 0.6);
+          ctx.lineTo(w, h * 0.52);
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#C2410C';
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.72);
+          ctx.quadraticCurveTo(w * 0.6, h * 0.55, w, h * 0.75);
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.fill();
+        }
+      },
+      {
+        id: 'neon-cyber',
+        name: 'Vibrant Mesh',
+        render: (ctx, w, h) => {
+          const g = ctx.createLinearGradient(0, 0, w, h);
+          g.addColorStop(0, '#06B6D4');
+          g.addColorStop(0.5, '#8B5CF6');
+          g.addColorStop(1, '#EC4899');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+
+          const glow = ctx.createRadialGradient(w * 0.3, h * 0.3, 10, w * 0.3, h * 0.3, w * 0.6);
+          glow.addColorStop(0, 'rgba(255,255,255,0.45)');
+          glow.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(0, 0, w, h);
+        }
+      },
+      {
+        id: 'forest-mist',
+        name: 'Misty Valley',
+        render: (ctx, w, h) => {
+          const sky = ctx.createLinearGradient(0, 0, 0, h);
+          sky.addColorStop(0, '#ECFDF5');
+          sky.addColorStop(0.45, '#A7F3D0');
+          sky.addColorStop(1, '#065F46');
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, w, h);
+
+          ctx.fillStyle = 'rgba(6, 78, 59, 0.55)';
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.65);
+          ctx.quadraticCurveTo(w * 0.25, h * 0.45, w * 0.55, h * 0.62);
+          ctx.quadraticCurveTo(w * 0.8, h * 0.72, w, h * 0.52);
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.fill();
+        }
+      },
+      {
+        id: 'sunset-bokeh',
+        name: 'Sunset Glow',
+        render: (ctx, w, h) => {
+          const g = ctx.createLinearGradient(0, 0, w, h);
+          g.addColorStop(0, '#F43F5E');
+          g.addColorStop(0.5, '#FB923C');
+          g.addColorStop(1, '#FACC15');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+
+          // Soft bokeh circles
+          ctx.fillStyle = 'rgba(255,255,255,0.18)';
+          [[0.2,0.25,0.12],[0.78,0.32,0.16],[0.6,0.75,0.14],[0.25,0.78,0.1]].forEach(([rx,ry,rr]) => {
+            ctx.beginPath();
+            ctx.arc(w * rx, h * ry, w * rr, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      },
+      {
+        id: 'marble-podium',
+        name: 'Product Podium',
+        render: (ctx, w, h) => {
+          const g = ctx.createLinearGradient(0, 0, 0, h);
+          g.addColorStop(0, '#E0F2FE');
+          g.addColorStop(1, '#BAE6FD');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+
+          // Studio cylinder podium at bottom
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath();
+          ctx.ellipse(w * 0.5, h * 0.84, w * 0.34, h * 0.08, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#F1F5F9';
+          ctx.fillRect(w * 0.16, h * 0.84, w * 0.68, h * 0.16);
+        }
+      }
+    ];
+
+    function populateBackgroundPresets() {
+      presetBackgrounds.forEach(preset => {
+        const thumb = document.createElement('canvas');
+        thumb.width = 140;
+        thumb.height = 140;
+        preset.render(thumb.getContext('2d'), 140, 140);
+
+        const btn = document.createElement('button');
+        btn.className = 'bg-preset-btn aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-[#0075FF] transition relative cursor-pointer shadow-2xs';
+        btn.title = preset.name;
+        btn.innerHTML = `<img src="${thumb.toDataURL()}" alt="${preset.name}" class="w-full h-full object-cover" />`;
+        btn.addEventListener('click', () => {
+          const session = getActiveSession();
+          if (!session) return;
+          session.bg = { type: 'preset', presetId: preset.id };
+          highlightSelectedBg(btn);
+          renderCompositeCanvas();
+        });
+        bgPhotoGrid.appendChild(btn);
+      });
+
+      // Solid color swatches
+      const solids = [
+        '#FFFFFF', '#000000', '#F8FAFC', '#EF4444', '#F97316',
+        '#FACC15', '#22C55E', '#06B6D4', '#0075FF', '#8B5CF6',
+        '#EC4899', '#F43F5E', '#14B8A6', '#64748B', '#FEF3C7'
+      ];
+      solids.forEach(hex => {
+        const btn = document.createElement('button');
+        btn.className = 'aspect-square rounded-xl border border-slate-200 hover:scale-105 transition cursor-pointer shadow-2xs';
+        btn.style.backgroundColor = hex;
+        btn.title = hex;
+        btn.addEventListener('click', () => {
+          const session = getActiveSession();
+          if (!session) return;
+          session.bg = { type: 'color', value: hex };
+          customColorPicker.value = hex;
+          customColorHex.value = hex;
+          renderCompositeCanvas();
+        });
+        solidColorSwatches.appendChild(btn);
+      });
+
+      // Gradient swatches
+      const gradients = [
+        ['#0075FF', '#00D4FF'],
+        ['#FF512F', '#DD2476'],
+        ['#8E2DE2', '#4A00E0'],
+        ['#11998E', '#38EF7D'],
+        ['#FC466B', '#3F5EFB'],
+        ['#FBD786', '#f7797d'],
+        ['#0F2027', '#2C5364'],
+        ['#FF9A9E', '#FECFEF']
+      ];
+      gradients.forEach(([c1, c2]) => {
+        const btn = document.createElement('button');
+        btn.className = 'aspect-square rounded-xl border border-slate-200 hover:scale-105 transition cursor-pointer shadow-2xs';
+        btn.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+        btn.addEventListener('click', () => {
+          const session = getActiveSession();
+          if (!session) return;
+          session.bg = { type: 'gradient', colors: [c1, c2] };
+          renderCompositeCanvas();
+        });
+        gradientColorSwatches.appendChild(btn);
+      });
+    }
+
+    function highlightSelectedBg(activeEl) {
+      document.querySelectorAll('#bgPhotoGrid button').forEach(b => {
+        b.classList.remove('border-[#0075FF]');
+        if (b !== bgTransparentBtn && b !== uploadCustomBgBtn) {
+          b.classList.add('border-transparent');
+        }
+      });
+      if (activeEl) {
+        activeEl.classList.remove('border-transparent');
+        activeEl.classList.add('border-[#0075FF]');
+      }
+    }
+
+    // =========================================================================
+    // CLIENT-SIDE AI + EDGE-AWARE BACKGROUND REMOVAL ENGINE
+    // =========================================================================
+
+    /**
+     * Attempts to load @imgly/background-removal neural model from CDN if available,
+     * with immediate seamless fallback to our built-in Multi-Seed Edge-Aware FloodFill
+     * & Color-Key Segmentation algorithm.
+     */
+    async function tryLoadAiLibrary() {
+      if (state.aiLoadAttempted) return state.aiModule;
+      state.aiLoadAttempted = true;
+      try {
+        const mod = await import('https://esm.sh/@imgly/background-removal@1.4.5');
+        if (mod && typeof mod.removeBackground === 'function') {
+          state.aiModule = mod.removeBackground;
+        }
+      } catch (e) {
+        // Fallback engine handles all images natively in-browser with zero latency
+        state.aiModule = null;
+      }
+      return state.aiModule;
+    }
+
+    /**
+     * Pure-JS Smart Multi-Seed Edge-Aware Background Segmentation + Feathering
+     * Works accurately on portraits, products, logos, screenshots, illustrations,
+     * solid/gradient/textured backgrounds without needing external network requests.
+     */
+    function computeSmartFallbackMask(originalCanvas, smartFeather = true) {
+      const w = originalCanvas.width;
+      const h = originalCanvas.height;
+      const srcCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
+      const imgData = srcCtx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // 1. Check if image already has significant alpha transparency
+      let transparentPixels = 0;
+      for (let i = 3; i < data.length; i += 16) {
+        if (data[i] < 200) transparentPixels++;
+      }
+      if (transparentPixels > (w * h) / 64) {
+        // Preserve existing alpha channel cleanly
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = w;
+        maskCanvas.height = h;
+        const mCtx = maskCanvas.getContext('2d');
+        const mData = mCtx.createImageData(w, h);
+        for (let i = 0; i < data.length; i += 4) {
+          mData.data[i] = 255;
+          mData.data[i + 1] = 255;
+          mData.data[i + 2] = 255;
+          mData.data[i + 3] = data[i + 3];
+        }
+        mCtx.putImageData(mData, 0, 0);
+        return maskCanvas;
+      }
+
+      // 2. Sample border pixels to build background color clusters
+      const borderSamples = [];
+      const step = Math.max(1, Math.floor(Math.min(w, h) / 60));
+      for (let x = 0; x < w; x += step) {
+        borderSamples.push(getPixelRGB(data, x, 0, w));
+        borderSamples.push(getPixelRGB(data, x, h - 1, w));
+      }
+      for (let y = 0; y < h; y += step) {
+        borderSamples.push(getPixelRGB(data, 0, y, w));
+        borderSamples.push(getPixelRGB(data, w - 1, y, w));
+      }
+
+      // Cluster border samples into dominant background colors (up to 6 clusters)
+      const clusters = [];
+      const clusterRadius = 38;
+      for (const rgb of borderSamples) {
+        let matched = false;
+        for (const c of clusters) {
+          if (colorDist(rgb, c.center) < clusterRadius) {
+            c.center[0] = (c.center[0] * c.count + rgb[0]) / (c.count + 1);
+            c.center[1] = (c.center[1] * c.count + rgb[1]) / (c.count + 1);
+            c.center[2] = (c.center[2] * c.count + rgb[2]) / (c.count + 1);
+            c.count++;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched && clusters.length < 8) {
+          clusters.push({ center: [...rgb], count: 1 });
+        }
+      }
+      clusters.sort((a, b) => b.count - a.count);
+      const topClusters = clusters.slice(0, 4);
+
+      // 3. Compute Sobel edge magnitude map so flood-fill respects crisp subject boundaries
+      const gray = new Float32Array(w * h);
+      for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+        gray[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+
+      const edgeMag = new Float32Array(w * h);
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = y * w + x;
+          const gx =
+            -gray[idx - w - 1] + gray[idx - w + 1] +
+            -2 * gray[idx - 1] + 2 * gray[idx + 1] +
+            -gray[idx + w - 1] + gray[idx + w + 1];
+          const gy =
+            -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1] +
+            gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
+          edgeMag[idx] = Math.min(255, Math.hypot(gx, gy) * 0.25);
+        }
+      }
+
+      // 4. Connected-component flood fill starting from all 4 image edges
+      const visited = new Uint8Array(w * h); // 0 = unvisited (foreground), 1 = background
+      const queue = new Int32Array(w * h);
+      let head = 0;
+      let tail = 0;
+
+      const minBgDist = (idx) => {
+        const p = idx * 4;
+        const r = data[p], g = data[p + 1], b = data[p + 2];
+        let best = 9999;
+        for (let c = 0; c < topClusters.length; c++) {
+          const cc = topClusters[c].center;
+          const d = Math.hypot(r - cc[0], g - cc[1], b - cc[2]);
+          if (d < best) best = d;
+        }
+        return best;
+      };
+
+      const seedThreshold = 54;
+      const trySeed = (x, y) => {
+        const idx = y * w + x;
+        if (!visited[idx] && minBgDist(idx) < seedThreshold) {
+          visited[idx] = 1;
+          queue[tail++] = idx;
+        }
+      };
+
+      for (let x = 0; x < w; x++) {
+        trySeed(x, 0);
+        trySeed(x, h - 1);
+      }
+      for (let y = 0; y < h; y++) {
+        trySeed(0, y);
+        trySeed(w - 1, y);
+      }
+
+      const dx = [-1, 1, 0, 0];
+      const dy = [0, 0, -1, 1];
+
+      while (head < tail) {
+        const curr = queue[head++];
+        const cx = curr % w;
+        const cy = (curr - cx) / w;
+        const cp = curr * 4;
+        const cr = data[cp], cg = data[cp + 1], cb = data[cp + 2];
+
+        for (let dir = 0; dir < 4; dir++) {
+          const nx = cx + dx[dir];
+          const ny = cy + dy[dir];
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const nIdx = ny * w + nx;
+          if (visited[nIdx]) continue;
+
+          const np = nIdx * 4;
+          const localDiff = Math.hypot(data[np] - cr, data[np + 1] - cg, data[np + 2] - cb);
+          const globalBgDiff = minBgDist(nIdx);
+          const edgePenalty = edgeMag[nIdx] * 0.48;
+
+          // Allow smooth gradient propagation while stopping cleanly at strong object edges
+          if ((globalBgDiff + edgePenalty < 58 && localDiff < 28) || (localDiff < 14 && globalBgDiff < 78)) {
+            visited[nIdx] = 1;
+            queue[tail++] = nIdx;
+          }
+        }
+      }
+
+      // 5. Also remove enclosed interior background pockets (e.g. inside handles, letters, arms)
+      // that closely match the primary border color cluster
+      const primaryBg = topClusters[0]?.center;
+      if (primaryBg) {
+        for (let idx = 0; idx < w * h; idx++) {
+          if (visited[idx] === 0 && edgeMag[idx] < 14) {
+            const p = idx * 4;
+            const d = Math.hypot(data[p] - primaryBg[0], data[p + 1] - primaryBg[1], data[p + 2] - primaryBg[2]);
+            if (d < 22) {
+              visited[idx] = 1;
+            }
+          }
+        }
+      }
+
+      // 6. Build alpha mask canvas with soft anti-aliased edge feathering
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = w;
+      maskCanvas.height = h;
+      const mCtx = maskCanvas.getContext('2d');
+      const mImg = mCtx.createImageData(w, h);
+      const mData = mImg.data;
+
+      for (let idx = 0; idx < w * h; idx++) {
+        const p = idx * 4;
+        mData[p] = 255;
+        mData[p + 1] = 255;
+        mData[p + 2] = 255;
+
+        if (visited[idx] === 1) {
+          mData[p + 3] = 0;
+        } else if (smartFeather) {
+          // Check 3x3 neighborhood for boundary feathering
+          const x = idx % w;
+          const y = (idx - x) / w;
+          let bgNeighbors = 0;
+          if (x > 0 && y > 0 && x < w - 1 && y < h - 1) {
+            for (let ky = -1; ky <= 1; ky++) {
+              for (let kx = -1; kx <= 1; kx++) {
+                if (visited[(y + ky) * w + (x + kx)] === 1) bgNeighbors++;
+              }
+            }
+          }
+          if (bgNeighbors > 0) {
+            mData[p + 3] = Math.max(40, Math.round(255 * (1 - bgNeighbors / 10)));
+          } else {
+            mData[p + 3] = 255;
+          }
+        } else {
+          mData[p + 3] = 255;
+        }
+      }
+
+      mCtx.putImageData(mImg, 0, 0);
+      return maskCanvas;
+    }
+
+    function getPixelRGB(data, x, y, w) {
+      const p = (y * w + x) * 4;
+      return [data[p], data[p + 1], data[p + 2]];
+    }
+
+    function colorDist(a, b) {
+      return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    }
+
+    /**
+     * Runs AI background removal (with automatic fallback to pure-JS Smart Segmentation)
+     */
+    async function runBackgroundRemoval(session) {
+      processingOverlay.classList.remove('hidden');
+      processingTitle.textContent = 'Removing background...';
+      processingSubtext.textContent = 'AI neural segmentation is isolating the foreground subject';
+      processingProgressBar.style.width = '30%';
+
+      await new Promise(r => setTimeout(r, 60));
+
+      try {
+        // Attempt neural AI model if reachable within 3.5 seconds, else use instant local segmentation
+        const removeBgFn = await Promise.race([
+          tryLoadAiLibrary(),
+          new Promise(resolve => setTimeout(() => resolve(null), 3500))
+        ]);
+
+        if (removeBgFn) {
+          processingProgressBar.style.width = '65%';
+          processingSubtext.textContent = 'Running deep neural cutout model...';
+          const blob = await new Promise(res => session.originalCanvas.toBlob(res, 'image/png'));
+          const resultBlob = await removeBgFn(blob);
+          const resultUrl = URL.createObjectURL(resultBlob);
+          const aiImg = await loadImageElement(resultUrl);
+          URL.revokeObjectURL(resultUrl);
+
+          const mCtx = session.maskCanvas.getContext('2d');
+          mCtx.clearRect(0, 0, session.width, session.height);
+          mCtx.drawImage(aiImg, 0, 0, session.width, session.height);
+        } else {
+          processingProgressBar.style.width = '75%';
+          processingSubtext.textContent = 'Refining edges with smart segmentation...';
+          await new Promise(r => setTimeout(r, 40));
+          const computedMask = computeSmartFallbackMask(session.originalCanvas, state.smartEdge);
+          const mCtx = session.maskCanvas.getContext('2d');
+          mCtx.clearRect(0, 0, session.width, session.height);
+          mCtx.drawImage(computedMask, 0, 0);
+        }
+      } catch (err) {
+        // Guaranteed fallback on any error
+        const computedMask = computeSmartFallbackMask(session.originalCanvas, state.smartEdge);
+        const mCtx = session.maskCanvas.getContext('2d');
+        mCtx.clearRect(0, 0, session.width, session.height);
+        mCtx.drawImage(computedMask, 0, 0);
+      }
+
+      processingProgressBar.style.width = '100%';
+      pushHistorySnapshot(session);
+      renderCompositeCanvas();
+      updateThumbnailStrip();
+
+      setTimeout(() => {
+        processingOverlay.classList.add('hidden');
+        processingProgressBar.style.width = '25%';
+      }, 220);
+    }
+
+    // =========================================================================
+    // IMAGE LOADING & SESSION MANAGEMENT
+    // =========================================================================
+
+    function loadImageElement(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = (e) => reject(e);
+        img.src = src;
+      });
+    }
+
+    async function loadImageFromSource(src, fileName = 'image.png') {
+      try {
+        const img = await loadImageElement(src);
+        // Scale down ultra-huge images slightly for snappy 60fps brush editing while keeping HD quality
+        const maxDim = 1600;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+
+        const originalCanvas = document.createElement('canvas');
+        originalCanvas.width = w;
+        originalCanvas.height = h;
+        originalCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = w;
+        maskCanvas.height = h;
+        maskCanvas.getContext('2d').fillStyle = '#FFFFFF';
+        maskCanvas.getContext('2d').fillRect(0, 0, w, h);
+
+        const session = {
+          id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name: fileName.replace(/\.[^/.]+$/, ''),
+          width: w,
+          height: h,
+          originalCanvas,
+          maskCanvas,
+          history: [],
+          historyIndex: -1,
+          bg: { type: 'transparent' },
+          effects: {
+            shadowEnabled: false,
+            shadowBlur: 18,
+            shadowOpacity: 45,
+            shadowOffsetY: 12,
+            outlineSize: 0,
+            outlineColor: '#FFFFFF'
+          },
+          adjust: {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100
+          }
+        };
+
+        state.sessions.push(session);
+        switchToEditorView();
+        selectSession(session.id);
+        await runBackgroundRemoval(session);
+      } catch (err) {
+        showToast('Could not load image. Check URL or CORS permissions.', 'error');
+      }
+    }
+
+    function handleFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      Array.from(fileList).forEach(file => {
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file (PNG, JPG, WebP)', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => loadImageFromSource(e.target.result, file.name);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function switchToEditorView() {
+      heroView.classList.add('hidden');
+      editorView.classList.remove('hidden');
+      editorView.classList.add('flex');
+    }
+
+    function switchToHeroView() {
+      editorView.classList.add('hidden');
+      editorView.classList.remove('flex');
+      heroView.classList.remove('hidden');
+    }
+
+    function selectSession(id) {
+      state.activeSessionId = id;
+      const session = getActiveSession();
+      if (!session) return;
+
+      // Sync UI sliders with session state
+      shadowToggle.checked = session.effects.shadowEnabled;
+      shadowBlurSlider.value = session.effects.shadowBlur;
+      shadowBlurVal.textContent = session.effects.shadowBlur + ' px';
+      shadowOpacitySlider.value = session.effects.shadowOpacity;
+      shadowOpacityVal.textContent = session.effects.shadowOpacity + '%';
+      shadowOffsetYSlider.value = session.effects.shadowOffsetY;
+      shadowOffsetYVal.textContent = session.effects.shadowOffsetY + ' px';
+      outlineColorInput.value = session.effects.outlineColor;
+      outlineSizeSlider.value = session.effects.outlineSize;
+      outlineSizeVal.textContent = session.effects.outlineSize + ' px';
+
+      adjBrightnessSlider.value = session.adjust.brightness;
+      adjBrightnessVal.textContent = session.adjust.brightness + '%';
+      adjContrastSlider.value = session.adjust.contrast;
+      adjContrastVal.textContent = session.adjust.contrast + '%';
+      adjSaturationSlider.value = session.adjust.saturation;
+      adjSaturationVal.textContent = session.adjust.saturation + '%';
+
+      bgBlurSlider.value = session.bg.type === 'blur' ? session.bg.amount : 0;
+      bgBlurVal.textContent = (session.bg.type === 'blur' ? session.bg.amount : 0) + ' px';
+
+      updateUndoRedoButtons();
+      renderCompositeCanvas();
+      updateThumbnailStrip();
+    }
+
+    // =========================================================================
+    // UNDO / REDO MASK HISTORY STACK
+    // =========================================================================
+
+    function pushHistorySnapshot(session) {
+      if (!session) return;
+      const mCtx = session.maskCanvas.getContext('2d', { willReadFrequently: true });
+      const snap = mCtx.getImageData(0, 0, session.width, session.height);
+
+      // Truncate redo states if branching
+      if (session.historyIndex < session.history.length - 1) {
+        session.history = session.history.slice(0, session.historyIndex + 1);
+      }
+      session.history.push(snap);
+      if (session.history.length > 20) {
+        session.history.shift();
+      } else {
+        session.historyIndex++;
+      }
+      updateUndoRedoButtons();
+    }
+
+    function undoMask() {
+      const session = getActiveSession();
+      if (!session || session.historyIndex <= 0) return;
+      session.historyIndex--;
+      const snap = session.history[session.historyIndex];
+      session.maskCanvas.getContext('2d').putImageData(snap, 0, 0);
+      updateUndoRedoButtons();
+      renderCompositeCanvas();
+      updateThumbnailStrip();
+    }
+
+    function redoMask() {
+      const session = getActiveSession();
+      if (!session || session.historyIndex >= session.history.length - 1) return;
+      session.historyIndex++;
+      const snap = session.history[session.historyIndex];
+      session.maskCanvas.getContext('2d').putImageData(snap, 0, 0);
+      updateUndoRedoButtons();
+      renderCompositeCanvas();
+      updateThumbnailStrip();
+    }
+
+    function updateUndoRedoButtons() {
+      const session = getActiveSession();
+      undoBtn.disabled = !session || session.historyIndex <= 0;
+      redoBtn.disabled = !session || session.historyIndex >= session.history.length - 1;
+    }
+
+    // =========================================================================
+    // COMPOSITING & RENDERING PIPELINE
+    // =========================================================================
+
+    function renderCompositeCanvas(targetCanvas = mainEditorCanvas, forceOpaqueWhite = false) {
+      const session = getActiveSession();
+      if (!session) return;
+
+      const w = session.width;
+      const h = session.height;
+      targetCanvas.width = w;
+      targetCanvas.height = h;
+      const ctx = targetCanvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      // If comparing with original image
+      if (state.isComparing && targetCanvas === mainEditorCanvas) {
+        ctx.drawImage(session.originalCanvas, 0, 0);
+        return;
+      }
+
+      // 1. Render Background Layer
+      if (session.bg.type === 'color') {
+        ctx.fillStyle = session.bg.value;
+        ctx.fillRect(0, 0, w, h);
+      } else if (session.bg.type === 'gradient') {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, session.bg.colors[0]);
+        grad.addColorStop(1, session.bg.colors[1]);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      } else if (session.bg.type === 'preset') {
+        const preset = presetBackgrounds.find(p => p.id === session.bg.presetId);
+        if (preset) preset.render(ctx, w, h);
+      } else if (session.bg.type === 'customImage' && session.bg.image) {
+        drawCoverImage(ctx, session.bg.image, w, h);
+      } else if (session.bg.type === 'blur' && session.bg.amount > 0) {
+        ctx.save();
+        ctx.filter = `blur(${session.bg.amount}px)`;
+        // Slight scale to prevent edge bleed from blur
+        ctx.drawImage(session.originalCanvas, -20, -20, w + 40, h + 40);
+        ctx.restore();
+      } else if (forceOpaqueWhite) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // 2. Build Masked Foreground Cutout Canvas
+      const cutoutCanvas = document.createElement('canvas');
+      cutoutCanvas.width = w;
+      cutoutCanvas.height = h;
+      const cCtx = cutoutCanvas.getContext('2d');
+
+      // Apply color adjustments (Brightness, Contrast, Saturation) to foreground
+      const { brightness, contrast, saturation } = session.adjust;
+      cCtx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+      cCtx.drawImage(session.originalCanvas, 0, 0);
+      cCtx.filter = 'none';
+
+      // Apply alpha mask using destination-in compositing
+      cCtx.globalCompositeOperation = 'destination-in';
+      cCtx.drawImage(session.maskCanvas, 0, 0);
+      cCtx.globalCompositeOperation = 'source-over';
+
+      // 3. Optional Sticker Outline Effect
+      if (session.effects.outlineSize > 0) {
+        const size = session.effects.outlineSize;
+        const outlineCanvas = document.createElement('canvas');
+        outlineCanvas.width = w;
+        outlineCanvas.height = h;
+        const oCtx = outlineCanvas.getContext('2d');
+
+        // Draw multi-angle silhouette dilated by `size`
+        const steps = 16;
+        for (let i = 0; i < steps; i++) {
+          const angle = (i / steps) * Math.PI * 2;
+          oCtx.drawImage(cutoutCanvas, Math.cos(angle) * size, Math.sin(angle) * size);
+        }
+        oCtx.globalCompositeOperation = 'source-in';
+        oCtx.fillStyle = session.effects.outlineColor;
+        oCtx.fillRect(0, 0, w, h);
+
+        ctx.drawImage(outlineCanvas, 0, 0);
+      }
+
+      // 4. Optional Drop Shadow + Draw Final Cutout
+      ctx.save();
+      if (session.effects.shadowEnabled) {
+        ctx.shadowColor = `rgba(15, 23, 42, ${session.effects.shadowOpacity / 100})`;
+        ctx.shadowBlur = session.effects.shadowBlur;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = session.effects.shadowOffsetY;
+      }
+      ctx.drawImage(cutoutCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    function drawCoverImage(ctx, img, targetW, targetH) {
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      const scale = Math.max(targetW / iw, targetH / ih);
+      const nw = iw * scale;
+      const nh = ih * scale;
+      ctx.drawImage(img, (targetW - nw) / 2, (targetH - nh) / 2, nw, nh);
+    }
+
+    // =========================================================================
+    // MAGIC BRUSH INTERACTIVE PAINTING (ERASE & RESTORE)
+    // =========================================================================
+
+    function getCanvasCoordinates(clientX, clientY) {
+      const rect = mainEditorCanvas.getBoundingClientRect();
+      const scaleX = mainEditorCanvas.width / rect.width;
+      const scaleY = mainEditorCanvas.height / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY,
+        displayScale: rect.width / mainEditorCanvas.width
+      };
+    }
+
+    function paintBrushStroke(fromPt, toPt) {
+      const session = getActiveSession();
+      if (!session) return;
+
+      const mCtx = session.maskCanvas.getContext('2d');
+      const radius = state.brushSize / 2;
+      const featherRatio = state.brushFeather / 100;
+
+      mCtx.save();
+      mCtx.globalCompositeOperation = state.brushMode === 'erase' ? 'destination-out' : 'source-over';
+
+      const dist = Math.hypot(toPt.x - fromPt.x, toPt.y - fromPt.y);
+      const steps = Math.max(1, Math.ceil(dist / Math.max(1, radius * 0.25)));
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = fromPt.x + (toPt.x - fromPt.x) * t;
+        const y = fromPt.y + (toPt.y - fromPt.y) * t;
+
+        if (featherRatio > 0.02) {
+          const grad = mCtx.createRadialGradient(x, y, radius * (1 - featherRatio), x, y, radius);
+          grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          mCtx.fillStyle = grad;
+        } else {
+          mCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+        }
+
+        mCtx.beginPath();
+        mCtx.arc(x, y, radius, 0, Math.PI * 2);
+        mCtx.fill();
+      }
+      mCtx.restore();
+      renderCompositeCanvas();
+    }
+
+    function updateBrushCursorVisual(clientX, clientY) {
+      if (state.activeTab !== 'cutout' || !getActiveSession()) {
+        brushCursor.classList.add('hidden');
+        return;
+      }
+      const rect = mainEditorCanvas.getBoundingClientRect();
+      if (
+        clientX < rect.left || clientX > rect.right ||
+        clientY < rect.top || clientY > rect.bottom
+      ) {
+        brushCursor.classList.add('hidden');
+        return;
+      }
+
+      const displayScale = rect.width / mainEditorCanvas.width;
+      const displayDiameter = Math.max(8, state.brushSize * displayScale);
+
+      brushCursor.classList.remove('hidden');
+      brushCursor.style.left = clientX + 'px';
+      brushCursor.style.top = clientY + 'px';
+      brushCursor.style.width = displayDiameter + 'px';
+      brushCursor.style.height = displayDiameter + 'px';
+      brushCursor.style.backgroundColor = state.brushMode === 'erase'
+        ? 'rgba(244, 63, 94, 0.42)'
+        : 'rgba(16, 185, 129, 0.42)';
+    }
+
+    // Pointer Events for Mouse + Touch Drawing
+    mainEditorCanvas.addEventListener('pointerdown', (e) => {
+      if (state.activeTab !== 'cutout') return;
+      const session = getActiveSession();
+      if (!session) return;
+      e.preventDefault();
+      mainEditorCanvas.setPointerCapture(e.pointerId);
+      state.isDrawing = true;
+      const pt = getCanvasCoordinates(e.clientX, e.clientY);
+      state.lastPoint = pt;
+      paintBrushStroke(pt, pt);
+    });
+
+    mainEditorCanvas.addEventListener('pointermove', (e) => {
+      updateBrushCursorVisual(e.clientX, e.clientY);
+      if (!state.isDrawing || state.activeTab !== 'cutout') return;
+      e.preventDefault();
+      const pt = getCanvasCoordinates(e.clientX, e.clientY);
+      paintBrushStroke(state.lastPoint, pt);
+      state.lastPoint = pt;
+    });
+
+    const endStroke = (e) => {
+      if (!state.isDrawing) return;
+      state.isDrawing = false;
+      state.lastPoint = null;
+      const session = getActiveSession();
+      if (session) {
+        pushHistorySnapshot(session);
+        updateThumbnailStrip();
+      }
+    };
+
+    mainEditorCanvas.addEventListener('pointerup', endStroke);
+    mainEditorCanvas.addEventListener('pointercancel', endStroke);
+    mainEditorCanvas.addEventListener('pointerleave', () => {
+      brushCursor.classList.add('hidden');
+    });
+
+    // =========================================================================
+    // COPY IMAGE TO CLIPBOARD & DOWNLOAD EXPORT
+    // =========================================================================
+
+    async function copyCutoutToClipboard() {
+      const session = getActiveSession();
+      if (!session) return;
+
+      try {
+        const exportCanvas = document.createElement('canvas');
+        renderCompositeCanvas(exportCanvas, false);
+
+        const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/png'));
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          copyBtnLabel.textContent = 'Copied!';
+          showToast('Image copied to clipboard! Paste anywhere (Ctrl+V)', 'success');
+          setTimeout(() => { copyBtnLabel.textContent = 'Copy'; }, 2000);
+        } else {
+          throw new Error('ClipboardItem unsupported');
+        }
+      } catch (err) {
+        showToast('Clipboard blocked by browser permissions — try Download instead.', 'error');
+      }
+    }
+
+    function downloadExportedImage(format = 'png') {
+      const session = getActiveSession();
+      if (!session) return;
+
+      const exportCanvas = document.createElement('canvas');
+      const needsOpaqueBg = format === 'jpg' && session.bg.type === 'transparent';
+      renderCompositeCanvas(exportCanvas, needsOpaqueBg);
+
+      const mimeMap = {
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        webp: 'image/webp'
+      };
+      const mime = mimeMap[format] || 'image/png';
+      const dataUrl = exportCanvas.toDataURL(mime, 0.95);
+
+      const link = document.createElement('a');
+      link.download = `${session.name}-removed-bg.${format}`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast(`Downloaded ${session.name}-removed-bg.${format.toUpperCase()}`, 'success');
+    }
+
+    // =========================================================================
+    // BOTTOM THUMBNAIL STRIP
+    // =========================================================================
+
+    function updateThumbnailStrip() {
+      // Remove existing thumb items except the + button
+      Array.from(thumbnailStrip.querySelectorAll('.session-thumb-item')).forEach(el => el.remove());
+
+      state.sessions.forEach(sess => {
+        const miniCanvas = document.createElement('canvas');
+        miniCanvas.width = 80;
+        miniCanvas.height = 80;
+        const mCtx = miniCanvas.getContext('2d');
+
+        // Composite mini preview
+        const temp = document.createElement('canvas');
+        temp.width = sess.width;
+        temp.height = sess.height;
+        const tCtx = temp.getContext('2d');
+        tCtx.drawImage(sess.originalCanvas, 0, 0);
+        tCtx.globalCompositeOperation = 'destination-in';
+        tCtx.drawImage(sess.maskCanvas, 0, 0);
+
+        const scale = Math.min(80 / sess.width, 80 / sess.height);
+        const nw = sess.width * scale;
+        const nh = sess.height * scale;
+        mCtx.drawImage(temp, (80 - nw) / 2, (80 - nh) / 2, nw, nh);
+
+        const isSelected = sess.id === state.activeSessionId;
+        const btn = document.createElement('button');
+        btn.className = `session-thumb-item w-14 h-14 rounded-2xl checkerboard-sm overflow-hidden shrink-0 border-2 transition relative cursor-pointer ${
+          isSelected ? 'border-[#0075FF] shadow-md scale-105' : 'border-slate-200 hover:border-slate-400'
+        }`;
+        btn.innerHTML = `<img src="${miniCanvas.toDataURL()}" alt="${sess.name}" class="w-full h-full object-contain" />`;
+        btn.addEventListener('click', () => selectSession(sess.id));
+        thumbnailStrip.appendChild(btn);
+      });
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS & UI WIRING
+    // =========================================================================
+
+    // Upload Triggers
+    [heroUploadBtn, headerUploadBtn, stripAddBtn, document.getElementById('navUploadsBtn'), document.getElementById('navBulkBtn')].forEach(btn => {
+      if (btn) btn.addEventListener('click', () => mainFileInput.click());
+    });
+
+    mainFileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+      mainFileInput.value = '';
+    });
+
+    brandLogoBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (state.sessions.length > 0 && !heroView.classList.contains('hidden')) {
+        switchToEditorView();
+      } else {
+        switchToHeroView();
+      }
+    });
+
+    document.getElementById('navToolsBtn').addEventListener('click', () => {
+      if (state.sessions.length > 0) {
+        switchToEditorView();
+        activateEditorTab('cutout');
+      } else {
+        mainFileInput.click();
+      }
+    });
+
+    // Global Drag & Drop anywhere on window
+    let dragCounter = 0;
+    window.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      globalDragOverlay.classList.remove('hidden');
+      globalDragOverlay.classList.add('flex');
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        globalDragOverlay.classList.add('hidden');
+        globalDragOverlay.classList.remove('flex');
+      }
+    });
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      globalDragOverlay.classList.add('hidden');
+      globalDragOverlay.classList.remove('flex');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    });
+
+    // Global Clipboard Paste (Ctrl+V / Cmd+V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFiles([file]);
+            showToast('Pasted image from clipboard!', 'success');
+          }
+          return;
+        }
+      }
+    });
+
+    [headerPasteBtn, heroPasteTrigger].forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imgType = item.types.find(t => t.startsWith('image/'));
+            if (imgType) {
+              const blob = await item.getType(imgType);
+              handleFiles([new File([blob], 'pasted-image.png', { type: imgType })]);
+              return;
+            }
+          }
+          showToast('Copy an image first, then press Ctrl+V anywhere!', 'info');
+        } catch {
+          showToast('Press Ctrl+V (or Cmd+V) anywhere on the page to paste your image!', 'info');
+        }
+      });
+    });
+
+    // URL Modal Handlers
+    heroUrlTrigger.addEventListener('click', () => {
+      urlModal.classList.remove('hidden');
+      urlModal.classList.add('flex');
+      urlInputField.focus();
+    });
+
+    const hideUrlModal = () => {
+      urlModal.classList.add('hidden');
+      urlModal.classList.remove('flex');
+    };
+    closeUrlModal.addEventListener('click', hideUrlModal);
+    cancelUrlBtn.addEventListener('click', hideUrlModal);
+    submitUrlBtn.addEventListener('click', () => {
+      const url = urlInputField.value.trim();
+      if (!url) return;
+      hideUrlModal();
+      loadImageFromSource(url, 'url-image.png');
+      urlInputField.value = '';
+    });
+
+    // Editor Top Pill Tabs
+    function activateEditorTab(tabName) {
+      state.activeTab = tabName;
+      tabButtons.forEach(btn => {
+        const isTarget = btn.dataset.tab === tabName;
+        btn.classList.toggle('bg-slate-100', isTarget);
+        btn.classList.toggle('text-slate-900', isTarget);
+        btn.classList.toggle('text-slate-600', !isTarget);
+      });
+
+      panelCutout.classList.toggle('hidden', tabName !== 'cutout');
+      panelBackground.classList.toggle('hidden', tabName !== 'background');
+      panelEffects.classList.toggle('hidden', tabName !== 'effects');
+      panelAdjust.classList.toggle('hidden', tabName !== 'adjust');
+
+      mainEditorCanvas.style.cursor = tabName === 'cutout' ? 'none' : 'default';
+      if (tabName !== 'cutout') brushCursor.classList.add('hidden');
+    }
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => activateEditorTab(btn.dataset.tab));
+    });
+
+    // Cutout Brush Mode & Sliders
+    brushModeErase.addEventListener('click', () => {
+      state.brushMode = 'erase';
+      brushModeErase.classList.add('border-2', 'border-[#0075FF]', 'bg-blue-50/30', 'text-[#0075FF]');
+      brushModeErase.classList.remove('border', 'border-slate-200', 'text-slate-700');
+      brushModeRestore.classList.remove('border-2', 'border-[#0075FF]', 'bg-blue-50/30', 'text-[#0075FF]');
+      brushModeRestore.classList.add('border', 'border-slate-200', 'text-slate-700');
+    });
+
+    brushModeRestore.addEventListener('click', () => {
+      state.brushMode = 'restore';
+      brushModeRestore.classList.add('border-2', 'border-[#0075FF]', 'bg-blue-50/30', 'text-[#0075FF]');
+      brushModeRestore.classList.remove('border', 'border-slate-200', 'text-slate-700');
+      brushModeErase.classList.remove('border-2', 'border-[#0075FF]', 'bg-blue-50/30', 'text-[#0075FF]');
+      brushModeErase.classList.add('border', 'border-slate-200', 'text-slate-700');
+    });
+
+    brushSizeSlider.addEventListener('input', (e) => {
+      state.brushSize = Number(e.target.value);
+      brushSizeVal.textContent = `${state.brushSize} px`;
+    });
+
+    brushFeatherSlider.addEventListener('input', (e) => {
+      state.brushFeather = Number(e.target.value);
+      brushFeatherVal.textContent = `${state.brushFeather}%`;
+    });
+
+    smartEdgeToggle.addEventListener('change', (e) => {
+      state.smartEdge = e.target.checked;
+    });
+
+    reRunAiBtn.addEventListener('click', () => {
+      const session = getActiveSession();
+      if (session) runBackgroundRemoval(session);
+    });
+
+    resetMaskBtn.addEventListener('click', () => {
+      const session = getActiveSession();
+      if (!session) return;
+      const mCtx = session.maskCanvas.getContext('2d');
+      mCtx.fillStyle = '#FFFFFF';
+      mCtx.fillRect(0, 0, session.width, session.height);
+      pushHistorySnapshot(session);
+      renderCompositeCanvas();
+      updateThumbnailStrip();
+      showToast('Full original image restored');
+    });
+
+    // Background Sub-tabs (Photo / Color / Blur)
+    bgSubButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sub = btn.dataset.bgsub;
+        bgSubButtons.forEach(b => {
+          const active = b.dataset.bgsub === sub;
+          b.classList.toggle('border-[#0075FF]', active);
+          b.classList.toggle('text-[#0075FF]', active);
+          b.classList.toggle('border-transparent', !active);
+          b.classList.toggle('text-slate-500', !active);
+        });
+        bgSubPhoto.classList.toggle('hidden', sub !== 'photo');
+        bgSubColor.classList.toggle('hidden', sub !== 'color');
+        bgSubBlur.classList.toggle('hidden', sub !== 'blur');
+      });
+    });
+
+    bgTransparentBtn.addEventListener('click', () => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.bg = { type: 'transparent' };
+      highlightSelectedBg(bgTransparentBtn);
+      renderCompositeCanvas();
+    });
+
+    uploadCustomBgBtn.addEventListener('click', () => bgFileInput.click());
+
+    bgFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const bgImg = await loadImageElement(ev.target.result);
+          const session = getActiveSession();
+          if (!session) return;
+          session.bg = { type: 'customImage', image: bgImg };
+          highlightSelectedBg(uploadCustomBgBtn);
+          renderCompositeCanvas();
+          showToast('Custom background applied!', 'success');
+        } catch {
+          showToast('Failed to load background image', 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+      bgFileInput.value = '';
+    });
+
+    // Custom Color Picker
+    customColorPicker.addEventListener('input', (e) => {
+      customColorHex.value = e.target.value.toUpperCase();
+      const session = getActiveSession();
+      if (!session) return;
+      session.bg = { type: 'color', value: e.target.value };
+      renderCompositeCanvas();
+    });
+
+    applyCustomColorBtn.addEventListener('click', () => {
+      const hex = customColorHex.value.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        customColorPicker.value = hex;
+        const session = getActiveSession();
+        if (session) {
+          session.bg = { type: 'color', value: hex };
+          renderCompositeCanvas();
+        }
+      } else {
+        showToast('Enter a valid 6-digit hex code like #0075FF', 'error');
+      }
+    });
+
+    // Blur Background Slider & Presets
+    bgBlurSlider.addEventListener('input', (e) => {
+      const amt = Number(e.target.value);
+      bgBlurVal.textContent = `${amt} px`;
+      const session = getActiveSession();
+      if (!session) return;
+      session.bg = amt === 0 ? { type: 'transparent' } : { type: 'blur', amount: amt };
+      renderCompositeCanvas();
+    });
+
+    document.querySelectorAll('.blur-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const amt = Number(btn.dataset.blur);
+        bgBlurSlider.value = amt;
+        bgBlurVal.textContent = `${amt} px`;
+        const session = getActiveSession();
+        if (!session) return;
+        session.bg = amt === 0 ? { type: 'transparent' } : { type: 'blur', amount: amt };
+        renderCompositeCanvas();
+      });
+    });
+
+    // Effects Sliders
+    shadowToggle.addEventListener('change', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.shadowEnabled = e.target.checked;
+      renderCompositeCanvas();
+    });
+
+    shadowBlurSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.shadowBlur = Number(e.target.value);
+      shadowBlurVal.textContent = `${e.target.value} px`;
+      renderCompositeCanvas();
+    });
+
+    shadowOpacitySlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.shadowOpacity = Number(e.target.value);
+      shadowOpacityVal.textContent = `${e.target.value}%`;
+      renderCompositeCanvas();
+    });
+
+    shadowOffsetYSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.shadowOffsetY = Number(e.target.value);
+      shadowOffsetYVal.textContent = `${e.target.value} px`;
+      renderCompositeCanvas();
+    });
+
+    outlineSizeSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.outlineSize = Number(e.target.value);
+      outlineSizeVal.textContent = `${e.target.value} px`;
+      renderCompositeCanvas();
+    });
+
+    outlineColorInput.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.effects.outlineColor = e.target.value;
+      renderCompositeCanvas();
+    });
+
+    // Adjust Sliders
+    adjBrightnessSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.adjust.brightness = Number(e.target.value);
+      adjBrightnessVal.textContent = `${e.target.value}%`;
+      renderCompositeCanvas();
+    });
+
+    adjContrastSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.adjust.contrast = Number(e.target.value);
+      adjContrastVal.textContent = `${e.target.value}%`;
+      renderCompositeCanvas();
+    });
+
+    adjSaturationSlider.addEventListener('input', (e) => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.adjust.saturation = Number(e.target.value);
+      adjSaturationVal.textContent = `${e.target.value}%`;
+      renderCompositeCanvas();
+    });
+
+    resetAdjustBtn.addEventListener('click', () => {
+      const session = getActiveSession();
+      if (!session) return;
+      session.adjust = { brightness: 100, contrast: 100, saturation: 100 };
+      adjBrightnessSlider.value = 100;
+      adjBrightnessVal.textContent = '100%';
+      adjContrastSlider.value = 100;
+      adjContrastVal.textContent = '100%';
+      adjSaturationSlider.value = 100;
+      adjSaturationVal.textContent = '100%';
+      renderCompositeCanvas();
+    });
+
+    // Compare Button (Hold or Click)
+    const startCompare = () => {
+      state.isComparing = true;
+      comparingBadge.classList.remove('hidden');
+      renderCompositeCanvas();
+    };
+    const stopCompare = () => {
+      state.isComparing = false;
+      comparingBadge.classList.add('hidden');
+      renderCompositeCanvas();
+    };
+    compareBtn.addEventListener('pointerdown', startCompare);
+    compareBtn.addEventListener('pointerup', stopCompare);
+    compareBtn.addEventListener('pointerleave', stopCompare);
+
+    // Undo / Redo & Keyboard Shortcuts
+    undoBtn.addEventListener('click', undoMask);
+    redoBtn.addEventListener('click', redoMask);
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) redoMask();
+        else undoMask();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        redoMask();
+      }
+    });
+
+    // Zoom Controls
+    function applyZoom(newZoom) {
+      state.zoom = Math.min(3, Math.max(0.4, newZoom));
+      zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
+      mainEditorCanvas.style.transform = `scale(${state.zoom})`;
+    }
+    zoomInBtn.addEventListener('click', () => applyZoom(state.zoom + 0.2));
+    zoomOutBtn.addEventListener('click', () => applyZoom(state.zoom - 0.2));
+    zoomResetBtn.addEventListener('click', () => applyZoom(1));
+
+    // Copy & Download Actions
+    copyImageBtn.addEventListener('click', copyCutoutToClipboard);
+    downloadMainBtn.addEventListener('click', () => downloadExportedImage('png'));
+
+    downloadDropdownToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadMenu.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.download-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        downloadMenu.classList.add('hidden');
+        downloadExportedImage(btn.dataset.format);
+      });
+    });
+
+    window.addEventListener('click', () => {
+      downloadMenu.classList.add('hidden');
+    });
+
+    // --- Initialize App ---
+    renderHeroShowcase();
+    createSampleImages();
+    populateBackgroundPresets();
+    activateEditorTab('cutout');
+  </script>
+</body>
+</html>
