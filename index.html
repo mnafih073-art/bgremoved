@@ -114,6 +114,37 @@
     .drag-overlay {
       backdrop-filter: blur(6px);
     }
+    /* CETA Branding Footer */
+.ceta-footer {
+    width: 100%;
+    padding: 18px 15px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #ffffff;
+    margin-top: 30px;
+}
+
+.ceta-footer-logo {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    margin-bottom: 7px;
+}
+
+.ceta-footer p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.ceta-footer strong {
+    color: #111827;
+    font-weight: 700;
+}
   </style>
 </head>
 <body class="min-h-screen flex flex-col select-none">
@@ -2597,5 +2628,13 @@
     populateBackgroundPresets();
     activateEditorTab('cutout');
   </script>
+  <!-- CETA Branding Footer -->
+<footer class="ceta-footer">
+    <img src="./footer.png" alt="CETA Logo" class="ceta-footer-logo">
+
+    <p>
+        Powered by <strong>CETA</strong>
+    </p>
+</footer>
 </body>
 </html>
