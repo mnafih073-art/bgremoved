@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="./logo.png">
   <title>remove.bg — Remove Image Background 100% Automatically & Free</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,9 +126,7 @@
   <div id="globalDragOverlay" class="fixed inset-0 z-50 bg-blue-600/15 drag-overlay hidden items-center justify-center p-6 pointer-events-none">
     <div class="bg-white rounded-3xl shadow-soft-xl border-2 border-dashed border-[#0075FF] px-12 py-10 text-center max-w-md">
       <div class="w-16 h-16 rounded-2xl bg-blue-50 text-[#0075FF] flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-        </svg>
+       
       </div>
       <h3 class="text-2xl font-bold text-slate-800">Drop image anywhere</h3>
       <p class="text-slate-500 text-sm mt-1">We'll automatically remove the background in seconds</p>
@@ -160,15 +159,14 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <!-- Brand + Nav Links -->
       <div class="flex items-center gap-8">
-        <a href="#" id="brandLogoBtn" class="flex items-center gap-2.5 group">
-          <!-- Stacked diamond icon matching remove.bg -->
-          <svg class="w-8 h-8" viewBox="0 0 36 36" fill="none">
-            <path d="M18 4L33 12.5L18 21L3 12.5L18 4Z" fill="#4B5563"/>
-            <path d="M3 18.5L18 27L33 18.5L29.5 16.5L18 23L6.5 16.5L3 18.5Z" fill="#9CA3AF"/>
-            <path d="M3 23.5L18 32L33 23.5L29.5 21.5L18 28L6.5 21.5L3 23.5Z" fill="#D1D5DB"/>
-          </svg>
-          <span class="text-2xl font-extrabold tracking-tight text-[#4B5563]">remove<span class="text-[#9CA3AF] font-bold">bg</span></span>
-        </a>
+     <a href="#" id="brandLogoBtn" class="flex items-center gap-2.5 group">
+    <img src="./logo.png"
+         alt="Logo"
+         class="w-8 h-8 object-contain">
+    <span class="text-2xl font-extrabold tracking-tight text-[#4B5563]">
+        remove<span class="text-[#9CA3AF] font-bold">bg</span>
+    </span>
+</a>
 
         <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
           <button id="navUploadsBtn" class="hover:text-slate-900 transition">Uploads</button>
